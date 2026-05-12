@@ -40,6 +40,7 @@ func main() {
 	w := worker.New(c, taskQueue, worker.Options{})
 	w.RegisterWorkflow(videoworkflow.VideoGenWorkflow)
 	w.RegisterActivity(videoactivity.UploadToStorage)
+	w.RegisterActivity(videoactivity.SubmitVideoAnalyzeTask)
 	w.RegisterActivity(videoactivity.SubmitVideoGenTask)
 	w.RegisterActivity(videoactivity.PollTaskStatus)
 	w.RegisterActivity(videoactivity.NotifyUser)

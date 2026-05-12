@@ -15,6 +15,7 @@ type VideoGenWorkflowInput struct {
 	Prompt             string
 	FirstFrameImageURL string
 	TailFrameImageURL  string
+	VideoURL           string
 	Seed               int
 	Frames             int
 	ReqJSON            string
@@ -46,26 +47,35 @@ func VideoGenWorkflow(ctx workflow.Context, in VideoGenWorkflowInput) (VideoGenW
 	if err := workflow.ExecuteActivity(ctx, activity.UploadToStorage, activity.UploadToStorageInput{
 		FirstFrameImageURL: in.FirstFrameImageURL,
 		TailFrameImageURL:  in.TailFrameImageURL,
+		VideoURL:           in.VideoURL,
 	}).Get(ctx, &uploaded); err != nil {
 		return VideoGenWorkflowResult{}, err
 	}
 
-	var submitted activity.SubmitVideoGenTaskOutput
+	var submitted_video activity.SubmitVideoAnalyzeOutput
+
+	if err := workflow.ExecuteActivity(ctx, activity.SubmitVideoAnalyzeTask, activity.SubmitVideoAnalyzeInput{
+		VideoDemoURL: in.VideoURL,
+	}).Get(ctx, &submitted_video); err != nil {
+		return VideoGenWorkflowResult{}, err
+	}
+
+	var submitted_image activity.SubmitVideoGenTaskOutput
 	if err := workflow.ExecuteActivity(ctx, activity.SubmitVideoGenTask, activity.SubmitVideoGenTaskInput{
 		ReqKey:             in.ReqKey,
-		Prompt:             in.Prompt,
+		Prompt:             submitted_video.Prompt,
 		FirstFrameImageURL: uploaded.FirstFrameImageURL,
 		TailFrameImageURL:  uploaded.TailFrameImageURL,
 		Seed:               in.Seed,
 		Frames:             in.Frames,
-	}).Get(ctx, &submitted); err != nil {
+	}).Get(ctx, &submitted_image); err != nil {
 		return VideoGenWorkflowResult{}, err
 	}
 
 	var polled activity.PollTaskStatusOutput
 	if err := workflow.ExecuteActivity(ctx, activity.PollTaskStatus, activity.PollTaskStatusInput{
 		ReqKey:          in.ReqKey,
-		TaskID:          submitted.TaskID,
+		TaskID:          submitted_image.TaskID,
 		ReqJSON:         in.ReqJSON,
 		MaxWait:         45 * time.Minute,
 		InitialInterval: 5 * time.Second,

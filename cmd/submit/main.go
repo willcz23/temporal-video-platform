@@ -24,14 +24,15 @@ func main() {
 	taskQueue := getenv("TEMPORAL_TASK_QUEUE", "video-gen-task-queue")
 
 	var (
-		userID  = flag.String("user-id", getenv("VIDEO_USER_ID", "demo-user"), "business user id")
-		reqKey  = flag.String("req-key", getenv("VOLC_REQ_KEY", "jimeng_i2v_first_tail_v30_1080"), "Visual API req_key")
-		first   = flag.String("first-frame", getenv("VIDEO_FIRST_FRAME_URL", ""), "first frame image URL (required)")
-		tail    = flag.String("tail-frame", getenv("VIDEO_TAIL_FRAME_URL", ""), "tail frame image URL (required)")
-		prompt  = flag.String("prompt", getenv("VIDEO_PROMPT", ""), "prompt text (required)")
-		seed    = flag.Int("seed", getIntEnv("VIDEO_SEED", -1), "random seed, -1 means random")
-		frames  = flag.Int("frames", getIntEnv("VIDEO_FRAMES", 121), "frame count: 121(5s) or 241(10s)")
-		reqJSON = flag.String("req-json", getenv("VIDEO_REQ_JSON", ""), "optional req_json for aigc_meta watermark")
+		userID    = flag.String("user-id", getenv("VIDEO_USER_ID", "demo-user"), "business user id")
+		reqKey    = flag.String("req-key", getenv("VOLC_REQ_KEY", "jimeng_i2v_first_tail_v30_1080"), "Visual API req_key")
+		first     = flag.String("first-frame", getenv("VIDEO_FIRST_FRAME_URL", ""), "first frame image URL (required)")
+		tail      = flag.String("tail-frame", getenv("VIDEO_TAIL_FRAME_URL", ""), "tail frame image URL (required)")
+		video_url = flag.String("video_demo", getenv("VIDEO_DEMO_URL", ""), "video_demo URL (required)")
+		prompt    = flag.String("prompt", getenv("VIDEO_PROMPT", ""), "prompt text (required)")
+		seed      = flag.Int("seed", getIntEnv("VIDEO_SEED", -1), "random seed, -1 means random")
+		frames    = flag.Int("frames", getIntEnv("VIDEO_FRAMES", 121), "frame count: 121(5s) or 241(10s)")
+		reqJSON   = flag.String("req-json", getenv("VIDEO_REQ_JSON", ""), "optional req_json for aigc_meta watermark")
 	)
 
 	flag.Parse()
@@ -65,6 +66,7 @@ func main() {
 		Prompt:             *prompt,
 		FirstFrameImageURL: *first,
 		TailFrameImageURL:  *tail,
+		VideoURL:           *video_url,
 		Seed:               *seed,
 		Frames:             *frames,
 		ReqJSON:            *reqJSON,

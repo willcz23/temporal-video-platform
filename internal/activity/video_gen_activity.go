@@ -1,11 +1,14 @@
 package activity
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"time"
 
@@ -27,11 +30,21 @@ const (
 type UploadToStorageInput struct {
 	FirstFrameImageURL string
 	TailFrameImageURL  string
+	VideoURL           string
 }
 
 type UploadToStorageOutput struct {
 	FirstFrameImageURL string
 	TailFrameImageURL  string
+	VideoURL           string
+}
+
+type SubmitVideoAnalyzeInput struct {
+	VideoDemoURL string
+}
+
+type SubmitVideoAnalyzeOutput struct {
+	Prompt string
 }
 
 type SubmitVideoGenTaskInput struct {
@@ -78,7 +91,91 @@ func UploadToStorage(ctx context.Context, in UploadToStorageInput) (UploadToStor
 	return UploadToStorageOutput{
 		FirstFrameImageURL: in.FirstFrameImageURL,
 		TailFrameImageURL:  in.TailFrameImageURL,
+		VideoURL:           in.VideoURL,
 	}, nil
+}
+
+func SubmitVideoAnalyzeTask(ctx context.Context, in SubmitVideoAnalyzeInput) (SubmitVideoAnalyzeOutput, error) {
+	logger := activity.GetLogger(ctx)
+	logger.Info("开始执行视频分析任务", "url", in.VideoDemoURL) // 👈 加一行这个
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("未找到 .env 文件，将使用系统环境变量")
+	}
+
+	apiKey := os.Getenv("ALIYUN_API_KEY")
+	baseUrl := os.Getenv("ALIYUN_BASE_URL")
+	video_prompt := "你是一个专业的视频内容分析助手。请根据提供的视频转录文本/画面描述/字幕，完成以下任务：1. 总结视频的核心内容（包括主题、主要观点、关键事实或步骤）。2. 将总结结果改写成一段\"可直接用于生成类似内容或描述视频用途\"的提示词。\n输出格式要求如下：\n---\n### 视频内容总结\n[用2-4句话概括视频主要内容]\n\n### 转化后的提示词（可直接复制使用）\n你是一个AI助手，请根据以下要求生成/理解内容：\n[在此处填入视频核心信息，以\"主题：xxx\"、\"关键点：1.xxx 2.xxx\"、\"风格/语气：xxx\"等形式组织，确保这段提示词能让另一个AI还原出相同主题和逻辑的内容]\n---\n\n请严格按照以上格式输出，不要添加额外解释。"
+
+	video_demoURL := in.VideoDemoURL
+
+	reqBody := map[string]interface{}{
+		"model": "qwen3-vl-flash",
+		"messages": []interface{}{
+			map[string]interface{}{
+				"role": "user",
+				"content": []interface{}{
+					map[string]interface{}{
+						"type": "video_url",
+						"video_url": map[string]interface{}{
+							"url": video_demoURL,
+						},
+						"fps": 2,
+					},
+					map[string]interface{}{
+						"type": "text",
+						"text": video_prompt,
+					},
+				},
+			},
+		},
+	}
+
+	jsonData, err := json.Marshal(reqBody)
+
+	req, err := http.NewRequest("POST", baseUrl, bytes.NewBuffer(jsonData))
+
+	req.Header.Set("Authorization", "Bearer"+" "+apiKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+	resp, err := client.Do(req)
+
+	if err != nil {
+		// ❌ 千万不要用 log.Fatalf！要返回 error 让 Temporal 处理重试
+		logger.Error("HTTP请求失败", "error", err)
+		return SubmitVideoAnalyzeOutput{}, err
+	}
+
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Error("读取响应失败", "error", err)
+		return SubmitVideoAnalyzeOutput{}, err
+	}
+
+	type AliyunResp struct {
+		Choices []struct {
+			Message struct {
+				Content string `json:"content"`
+			} `json:"message"`
+		} `json:"choices"`
+
+		Usage struct {
+			Total_tokens int `json:"total_tokens"`
+		} `json:"usage"`
+	}
+	var result AliyunResp
+
+	if err := json.Unmarshal(body, &result); err != nil {
+		log.Fatal("解析失败:", err)
+	}
+
+	logger.Info("视频理解成功", "content", result.Choices[0].Message.Content)
+	return SubmitVideoAnalyzeOutput{Prompt: result.Choices[0].Message.Content}, nil
 }
 
 func SubmitVideoGenTask(ctx context.Context, in SubmitVideoGenTaskInput) (SubmitVideoGenTaskOutput, error) {
