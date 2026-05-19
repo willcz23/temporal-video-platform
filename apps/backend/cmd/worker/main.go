@@ -6,17 +6,16 @@ import (
 	"os/signal"
 	"syscall"
 
-	videoactivity "video_demo/internal/activity"
-	videoworkflow "video_demo/internal/workflow"
+	videoactivity "video_demo/apps/backend/internal/activity"
+	"video_demo/apps/backend/internal/config/envloader"
+	videoworkflow "video_demo/apps/backend/internal/workflow"
 
-	"github.com/joho/godotenv"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
+	if _, err := envloader.Load(); err != nil {
 		log.Println("未找到 .env 文件，将使用系统环境变量")
 	}
 

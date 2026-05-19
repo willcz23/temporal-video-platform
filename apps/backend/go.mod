@@ -1,4 +1,5 @@
-module video_demo
+
+module video_demo/apps/backend
 
 go 1.21
 
@@ -38,3 +39,7 @@ require (
 )
 
 exclude google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
+
+replace google.golang.org/genproto/googleapis/api => google.golang.org/genproto v0.0.0-20210917145530-b395a37504d4
+
+replace google.golang.org/genproto/googleapis/rpc => google.golang.org/genproto v0.0.0-20210917145530-b395a37504d4

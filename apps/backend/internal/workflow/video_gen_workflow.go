@@ -6,7 +6,7 @@ import (
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 
-	"video_demo/internal/activity"
+	"video_demo/apps/backend/internal/activity"
 )
 
 type VideoGenWorkflowInput struct {

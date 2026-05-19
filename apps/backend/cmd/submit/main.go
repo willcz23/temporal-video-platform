@@ -8,15 +8,15 @@ import (
 	"os"
 	"time"
 
+	"video_demo/apps/backend/internal/config/envloader"
+
 	"go.temporal.io/sdk/client"
 
-	"github.com/joho/godotenv"
-
-	videoworkflow "video_demo/internal/workflow"
+	videoworkflow "video_demo/apps/backend/internal/workflow"
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
+	if _, err := envloader.Load(); err != nil {
 		log.Println("No .env file found or error loading, continuing with OS environment")
 	}
 	hostPort := getenv("TEMPORAL_HOST_PORT", client.DefaultHostPort)

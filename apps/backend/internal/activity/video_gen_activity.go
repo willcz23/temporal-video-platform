@@ -11,12 +11,11 @@ import (
 	"net/http"
 	"os"
 	"time"
+	"video_demo/apps/backend/internal/config/envloader"
 
 	"github.com/volcengine/volc-sdk-golang/service/visual"
 	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/temporal"
-
-	"github.com/joho/godotenv"
 )
 
 const (
@@ -98,8 +97,7 @@ func UploadToStorage(ctx context.Context, in UploadToStorageInput) (UploadToStor
 func SubmitVideoAnalyzeTask(ctx context.Context, in SubmitVideoAnalyzeInput) (SubmitVideoAnalyzeOutput, error) {
 	logger := activity.GetLogger(ctx)
 	logger.Info("开始执行视频分析任务", "url", in.VideoDemoURL) // 👈 加一行这个
-	err := godotenv.Load()
-	if err != nil {
+	if _, err := envloader.Load(); err != nil {
 		log.Println("未找到 .env 文件，将使用系统环境变量")
 	}
 
@@ -193,8 +191,7 @@ func SubmitVideoGenTask(ctx context.Context, in SubmitVideoGenTaskInput) (Submit
 		return SubmitVideoGenTaskOutput{}, temporal.NewNonRetryableApplicationError("frames must be 121 or 241", "validation_error", nil)
 	}
 
-	err := godotenv.Load()
-	if err != nil {
+	if _, err := envloader.Load(); err != nil {
 		log.Println("未找到 .env 文件，将使用系统环境变量")
 	}
 
@@ -258,8 +255,7 @@ func SubmitVideoGenTask(ctx context.Context, in SubmitVideoGenTaskInput) (Submit
 func PollTaskStatus(ctx context.Context, in PollTaskStatusInput) (PollTaskStatusOutput, error) {
 	logger := activity.GetLogger(ctx)
 
-	err := godotenv.Load()
-	if err != nil {
+	if _, err := envloader.Load(); err != nil {
 		log.Println("未找到 .env 文件，将使用系统环境变量")
 	}
 
